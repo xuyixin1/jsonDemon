@@ -2,11 +2,13 @@ package com.example.springbootdemo.jsonDemon;
 
 public class Test {
     private String a;
-    private String b;
+    private int b;
+    private Integer c;
 
-    public Test(String a, String b) {
+    public Test(String a, int b,Integer c) {
         this.a = a;
         this.b = b;
+        this.c = c;
     }
 
     public Test (){
@@ -21,11 +23,19 @@ public class Test {
         this.a = a;
     }
 
-    public String getB() {
+    public int getB() {
         return b;
     }
 
-    public void setB(String b) {
+    public void setB(int b) {
         this.b = b;
+    }
+
+    public Integer getC() {
+        return c;
+    }
+
+    public void setC(Integer c) {
+        this.c = c;
     }
 }

@@ -2,10 +2,7 @@ package com.example.springbootdemo.jsonDemon;
 
 
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -86,9 +83,9 @@ public class JsonDemon {
     }
 
     public static void main(String[] args){
-        String json  = getJson(new Test("a","10"));
+        String json  = getJson(new Test("a",10,15));
         System.out.print(json);
-        String s = "{\"a\":\"a\",\"b\":\"10\"}";
+        String s = "{\"a\":\"a\",\"b\":\"10\",\"c\":\"10\"}";
         Test t = getClass(s,Test.class);
     }
 
@@ -108,7 +105,13 @@ public class JsonDemon {
             for (MethodInfo info : infos) {
                 String fieldName = info.getFieldName();
                 String value = getFieldNameValue(json, fieldName);
-                info.getSetMethod().invoke(t, value);
+                Type type = info.getField().getType();
+                if (type.toString().equals("int")|| type.toString().equals("class java.lang.Integer")){
+                    info.getSetMethod().invoke(t, Integer.parseInt(value));
+                } else{
+                    info.getSetMethod().invoke(t, value);
+                }
+
             }
         } catch (IllegalAccessException e) {
             e.printStackTrace();
