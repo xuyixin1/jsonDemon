@@ -1,10 +1,7 @@
 package com.example.springbootdemo.jsonDemon;
 
-
-
 import java.lang.reflect.*;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -12,37 +9,39 @@ import java.util.regex.Pattern;
 public class JsonDemon {
     public static final String GET = "get";
     public static final String SET = "set";
-    public static  void  getAllFields(HashMap<String,Field> hashmap ,Class clazz){
+    public static  void  getAllFields(List<MethodInfo> infos ,Class clazz){
         Field[] fields = clazz.getDeclaredFields();
         for(Field field:fields){
-           String name =  field.getName();
-           if (Modifier.isStatic(field.getModifiers())){
-               continue;
+            if (Modifier.isStatic(field.getModifiers())){
+                continue;
             }
-           if(!hashmap.containsKey(name)){
-               hashmap.put(name,field);
-           }
+            MethodInfo info = new MethodInfo();
+            String annoName = "";
+            if (field.isAnnotationPresent(JsonField.class)){
+                annoName = field.getDeclaredAnnotation(JsonField.class).name();
+            }
+           String  filedName =  field.getName();
+           info.setField(field);
+           info.setFieldName(filedName);
+           info.setAnnoName(annoName);
+           infos.add(info);
         }
         if (clazz.getSuperclass() != null && clazz.getSuperclass() != Object.class){
-           getAllFields(hashmap,clazz.getSuperclass());
+           getAllFields(infos,clazz.getSuperclass());
         }
     }
 
-    public static void getMethod(List<MethodInfo> infos , HashMap<String,Field> hashmap , Class clazz){
+    public static void getMethod(List<MethodInfo> infos , Class clazz){
            try {
-               for(String name : hashmap.keySet()) {
-                   String getMethodName = getMethodName(name);
-                   Method getMethod = clazz.getMethod(getMethodName, new Class[]{});
-                   String setMethodName = setMethodName(name);
-                   Method setMethod = clazz.getMethod(setMethodName,new Class[]{hashmap.get(name).getType()});
-                   MethodInfo info = new MethodInfo();
-                   info.setField(hashmap.get(name));
-                   info.setFieldName(name);
+               for(MethodInfo info : infos) {
+                   String getMethodName = getMethodName(info.getFieldName());
+                   Method getMethod = clazz.getMethod(getMethodName,null);
+                   String setMethodName = setMethodName(info.getFieldName());
+                   Method setMethod = clazz.getMethod(setMethodName,new Class[]{info.getField().getType()});
                    info.setSetMethod(setMethod);
                    info.setSetMethodName(setMethodName);
                    info.setGetMethod(getMethod);
                    info.setGetMethodName(getMethodName);
-                   infos.add(info);
                }
            } catch (NoSuchMethodException e) {
                e.printStackTrace();
@@ -54,7 +53,11 @@ public class JsonDemon {
         try {
             sb.append("{");
             for (MethodInfo info : infos) {
-                sb.append("\"" + info.getFieldName() + "\"" + ":");
+                if (info.getAnnoName()!= ""){
+                    sb.append("\"" + info.getAnnoName() + "\"" + ":");
+                }else{
+                    sb.append("\"" + info.getFieldName() + "\"" + ":");
+                }
                 sb.append("\"" + info.getGetMethod().invoke(clazz.cast(o),null).toString()+ "\",");
             }
         } catch (IllegalAccessException e) {
@@ -74,10 +77,9 @@ public class JsonDemon {
 
     public static String getJson(Object o){
         Class clazz = o.getClass();
-        HashMap<String,Field> hashmap = new   HashMap<>(8);
         List<MethodInfo> infos = new ArrayList<>(8);
-        getAllFields(hashmap,clazz);
-        getMethod(infos,hashmap,clazz);
+        getAllFields(infos,clazz);
+        getMethod(infos,clazz);
         String json = getJson(infos,clazz,o);
         return json;
     }
@@ -90,10 +92,9 @@ public class JsonDemon {
     }
 
     public static <T> T getClass(String json ,Class<T> clazz){
-        HashMap<String,Field> hashmap = new   HashMap<>(8);
         List<MethodInfo> infos = new ArrayList<>(8);
-        getAllFields(hashmap,clazz);
-        getMethod(infos,hashmap,clazz);
+        getAllFields(infos,clazz);
+        getMethod(infos,clazz);
         T t = getClass(json,infos,clazz);
         return t;
     }
@@ -108,7 +109,13 @@ public class JsonDemon {
                 Type type = info.getField().getType();
                 if (type.toString().equals("int")|| type.toString().equals("class java.lang.Integer")){
                     info.getSetMethod().invoke(t, Integer.parseInt(value));
-                } else{
+                } else if (type.toString().equals("long")|| type.toString().equals("class java.lang.Long")) {
+                    info.getSetMethod().invoke(t, Long.parseLong(value));
+                } else if (type.toString().equals("short")|| type.toString().equals("class java.lang.Short")) {
+                    info.getSetMethod().invoke(t, Short.parseShort(value));
+                } else if (type.toString().equals("byte")|| type.toString().equals("class java.lang.Byte")){
+                    info.getSetMethod().invoke(t, Byte.parseByte(value));
+                }else{
                     info.getSetMethod().invoke(t, value);
                 }
 

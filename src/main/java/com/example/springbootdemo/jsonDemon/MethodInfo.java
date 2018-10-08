@@ -6,6 +6,7 @@ import java.lang.reflect.Method;
 public class MethodInfo {
     private Field field;
     private String fieldName;
+    private String annoName;
     private Method getMethod;
     private String getMethodName;
     private Method setMethod;
@@ -55,7 +56,16 @@ public class MethodInfo {
         return setMethodName;
     }
 
+    public String getAnnoName() {
+        return annoName;
+    }
+
+    public void setAnnoName(String annoName) {
+        this.annoName = annoName;
+    }
+
     public void setSetMethodName(String setMethodName) {
         this.setMethodName = setMethodName;
     }
+
 }
