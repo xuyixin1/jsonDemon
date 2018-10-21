@@ -1,5 +1,10 @@
 package com.example.springbootdemo.jsonDemon;
 
+import com.example.springbootdemo.jsonDemon.json.IntegerJson;
+import com.example.springbootdemo.jsonDemon.json.LongJson;
+import com.example.springbootdemo.jsonDemon.json.ShortJson;
+import com.example.springbootdemo.jsonDemon.json.StringJson;
+
 import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -7,9 +12,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class JsonDemon {
-    public static final String GET = "get";
-    public static final String SET = "set";
-    public static  void  getAllFields(List<MethodInfo> infos ,Class clazz){
+    private static final String GET = "get";
+    private static final String SET = "set";
+    private static  void  getAllFields(List<MethodInfo> infos ,Class clazz){
         Field[] fields = clazz.getDeclaredFields();
         for(Field field:fields){
             if (Modifier.isStatic(field.getModifiers())){
@@ -31,7 +36,7 @@ public class JsonDemon {
         }
     }
 
-    public static void getMethod(List<MethodInfo> infos , Class clazz){
+    private static void getMethod(List<MethodInfo> infos , Class clazz){
            try {
                for(MethodInfo info : infos) {
                    String getMethodName = getMethodName(info.getFieldName());
@@ -48,30 +53,35 @@ public class JsonDemon {
            }
     }
 
-    public static String getJson(List<MethodInfo> infos, Class clazz, Object o){
+    private static String getJson(List<MethodInfo> infos, Class clazz, Object o){
         StringBuilder sb = new StringBuilder();
-        try {
-            sb.append("{");
-            for (MethodInfo info : infos) {
-                if (info.getAnnoName()!= ""){
-                    sb.append("\"" + info.getAnnoName() + "\"" + ":");
-                }else{
-                    sb.append("\"" + info.getFieldName() + "\"" + ":");
-                }
-                sb.append("\"" + info.getGetMethod().invoke(clazz.cast(o),null).toString()+ "\",");
+        sb.append("{");
+        for (MethodInfo info : infos) {
+            if (info.getAnnoName().isEmpty()){
+                sb.append("\"" + info.getAnnoName() + "\"" + ":");
+            }else{
+                sb.append("\"" + info.getFieldName() + "\"" + ":");
             }
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
+            Type type = info.getField().getType();
+            if (type.toString().equals("int")|| type.toString().equals("class java.lang.Integer")){
+               IntegerJson.getString(info.getGetMethod(), clazz, o,sb);
+            } else if (type.toString().equals("long")|| type.toString().equals("class java.lang.Long")) {
+                LongJson.getString(info.getGetMethod(), clazz, o,sb);
+            } else if (type.toString().equals("short")|| type.toString().equals("class java.lang.Short")) {
+               ShortJson.getString(info.getGetMethod(), clazz, o,sb);
+            }else{
+                StringJson.getString(info.getGetMethod(), clazz, o,sb);
+            }
         }
-       return  sb.toString().substring(0,sb.length()-1) + "}";
+        sb.deleteCharAt(sb.length()-1);
+        sb.append("}");
+        return  sb.toString();
     }
-    public static String getMethodName(String name){
+    private static String getMethodName(String name){
         return  GET + name.substring(0, 1).toUpperCase() + name.substring(1);
     }
 
-    public static String setMethodName(String name){
+    private static String setMethodName(String name){
         return SET + name.substring(0, 1).toUpperCase() + name.substring(1);
     }
 
@@ -87,7 +97,7 @@ public class JsonDemon {
     public static void main(String[] args){
         String json  = getJson(new Test("a",10,15));
         System.out.print(json);
-        String s = "{\"a\":\"a\",\"b\":\"10\",\"c\":\"10\"}";
+        String s = "{\"a\":\"a\",\"int\":10,\"Integer\":10}";
         Test t = getClass(s,Test.class);
     }
 
@@ -99,16 +109,21 @@ public class JsonDemon {
         return t;
     }
 
-    public static  <T> T getClass(String json, List<MethodInfo> infos, Class<T> clazz){
+    private static  <T> T getClass(String json, List<MethodInfo> infos, Class<T> clazz){
         T t = null;
         try {
             t = clazz.newInstance();
             for (MethodInfo info : infos) {
-                String fieldName = info.getFieldName();
+                String fieldName ;
+                if (info.getAnnoName().isEmpty()){
+                   fieldName = info.getFieldName();
+                } else {
+                    fieldName = info.getAnnoName();
+                }
                 String value = getFieldNameValue(json, fieldName);
                 Type type = info.getField().getType();
                 if (type.toString().equals("int")|| type.toString().equals("class java.lang.Integer")){
-                    info.getSetMethod().invoke(t, Integer.parseInt(value));
+                    IntegerJson.setClass(info.getSetMethod(),t,json,fieldName);
                 } else if (type.toString().equals("long")|| type.toString().equals("class java.lang.Long")) {
                     info.getSetMethod().invoke(t, Long.parseLong(value));
                 } else if (type.toString().equals("short")|| type.toString().equals("class java.lang.Short")) {
@@ -118,7 +133,6 @@ public class JsonDemon {
                 }else{
                     info.getSetMethod().invoke(t, value);
                 }
-
             }
         } catch (IllegalAccessException e) {
             e.printStackTrace();
@@ -132,7 +146,7 @@ public class JsonDemon {
         }
     }
 
-    public static String getFieldNameValue(String json,String fieldName){
+    private static String getFieldNameValue(String json,String fieldName){
         int index = json.indexOf(fieldName);
         if (index == -1){
             return "";
@@ -143,7 +157,7 @@ public class JsonDemon {
 
     }
 
-    public static int getCharacterPosition(String matString,String string,int n){
+    private static int getCharacterPosition(String matString,String string,int n){
         Matcher slashMatcher = Pattern.compile(string).matcher(matString);
         int mIdx = 0;
         while(slashMatcher.find())
