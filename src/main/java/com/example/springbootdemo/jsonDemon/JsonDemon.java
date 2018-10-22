@@ -1,9 +1,6 @@
 package com.example.springbootdemo.jsonDemon;
 
-import com.example.springbootdemo.jsonDemon.json.IntegerJson;
-import com.example.springbootdemo.jsonDemon.json.LongJson;
-import com.example.springbootdemo.jsonDemon.json.ShortJson;
-import com.example.springbootdemo.jsonDemon.json.StringJson;
+import com.example.springbootdemo.jsonDemon.json.*;
 
 import java.lang.reflect.*;
 import java.util.ArrayList;
@@ -37,20 +34,20 @@ public class JsonDemon {
     }
 
     private static void getMethod(List<MethodInfo> infos , Class clazz){
-           try {
-               for(MethodInfo info : infos) {
-                   String getMethodName = getMethodName(info.getFieldName());
-                   Method getMethod = clazz.getMethod(getMethodName,null);
-                   String setMethodName = setMethodName(info.getFieldName());
-                   Method setMethod = clazz.getMethod(setMethodName,new Class[]{info.getField().getType()});
-                   info.setSetMethod(setMethod);
-                   info.setSetMethodName(setMethodName);
-                   info.setGetMethod(getMethod);
-                   info.setGetMethodName(getMethodName);
-               }
-           } catch (NoSuchMethodException e) {
-               e.printStackTrace();
-           }
+        try {
+            for(MethodInfo info : infos) {
+                String getMethodName = getMethodName(info.getFieldName());
+                Method getMethod = clazz.getMethod(getMethodName,null);
+                String setMethodName = setMethodName(info.getFieldName());
+                Method setMethod = clazz.getMethod(setMethodName,new Class[]{info.getField().getType()});
+                info.setSetMethod(setMethod);
+                info.setSetMethodName(setMethodName);
+                info.setGetMethod(getMethod);
+                info.setGetMethodName(getMethodName);
+            }
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        }
     }
 
     private static String getJson(List<MethodInfo> infos, Class clazz, Object o){
@@ -94,12 +91,7 @@ public class JsonDemon {
         return json;
     }
 
-    public static void main(String[] args){
-        String json  = getJson(new Test("a",10,15));
-        System.out.print(json);
-        String s = "{\"a\":\"a\",\"int\":10,\"Integer\":10}";
-        Test t = getClass(s,Test.class);
-    }
+
 
     public static <T> T getClass(String json ,Class<T> clazz){
         List<MethodInfo> infos = new ArrayList<>(8);
@@ -120,25 +112,22 @@ public class JsonDemon {
                 } else {
                     fieldName = info.getAnnoName();
                 }
-                String value = getFieldNameValue(json, fieldName);
                 Type type = info.getField().getType();
                 if (type.toString().equals("int")|| type.toString().equals("class java.lang.Integer")){
                     IntegerJson.setClass(info.getSetMethod(),t,json,fieldName);
                 } else if (type.toString().equals("long")|| type.toString().equals("class java.lang.Long")) {
-                    info.getSetMethod().invoke(t, Long.parseLong(value));
+                    LongJson.setClass(info.getSetMethod(),t,json,fieldName);
                 } else if (type.toString().equals("short")|| type.toString().equals("class java.lang.Short")) {
-                    info.getSetMethod().invoke(t, Short.parseShort(value));
+                    ShortJson.setClass(info.getSetMethod(),t,json,fieldName);
                 } else if (type.toString().equals("byte")|| type.toString().equals("class java.lang.Byte")){
-                    info.getSetMethod().invoke(t, Byte.parseByte(value));
+                    ByteJson.setClass(info.getSetMethod(),t,json,fieldName);
                 }else{
-                    info.getSetMethod().invoke(t, value);
+                    StringJson.setClass(info.getSetMethod(),t,json,fieldName);
                 }
             }
         } catch (IllegalAccessException e) {
             e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
-        } catch (InstantiationException e) {
+        }catch (InstantiationException e) {
             e.printStackTrace();
         }
         finally{
@@ -146,28 +135,12 @@ public class JsonDemon {
         }
     }
 
-    private static String getFieldNameValue(String json,String fieldName){
-        int index = json.indexOf(fieldName);
-        if (index == -1){
-            return "";
-        }
-        String value = json.substring(index);
-        value = value.substring(getCharacterPosition(value,"\"",2) + 1,getCharacterPosition(value,"\"",3));
-        return value;
 
-    }
-
-    private static int getCharacterPosition(String matString,String string,int n){
-        Matcher slashMatcher = Pattern.compile(string).matcher(matString);
-        int mIdx = 0;
-        while(slashMatcher.find())
-         {
-             mIdx++;
-             if(mIdx == n){
-                 break;
-             }
-         }
-         return slashMatcher.start();
+    public static void main(String[] args){
+        String json  = getJson(new Test("a",10,15));
+        System.out.print(json);
+        String s = "{\"a\":\"a\",\"int\":10,\"Integer\":10}";
+        Test t = getClass(s,Test.class);
     }
 
 }

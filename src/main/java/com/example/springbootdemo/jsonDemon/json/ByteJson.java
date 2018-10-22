@@ -5,8 +5,8 @@ import java.lang.reflect.Method;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class LongJson {
-    public static void getString(Method method , Class clazz, Object o, StringBuilder sb) {
+public class ByteJson {
+    public static void  getString(Method method , Class clazz, Object o, StringBuilder sb) {
         try {
             sb.append(method.invoke(clazz.cast(o), null).toString() + ",");
         } catch (IllegalAccessException e) {
@@ -19,7 +19,7 @@ public class LongJson {
     public static <T> void setClass(Method method, T t, String json, String fieldName ){
         String value =  getFieldNameValue(json, fieldName);
         try {
-            method.invoke(t, Long.parseLong(value));
+            method.invoke(t, Byte.parseByte(value));
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         } catch (InvocationTargetException e) {
@@ -51,4 +51,3 @@ public class LongJson {
         return slashMatcher.start();
     }
 }
-
