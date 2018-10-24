@@ -12,30 +12,24 @@ public class JsonDemon {
     private static final String GET = "get";
     private static final String SET = "set";
     private static  void  getAllFields(List<MethodInfo> infos ,Class clazz){
-        Field[] fields = clazz.getDeclaredFields();
-        for(Field field:fields){
-            if (Modifier.isStatic(field.getModifiers())){
-                continue;
+        try{
+            if (clazz.getSuperclass() != null && clazz.getSuperclass() != Object.class){
+                getAllFields(infos,clazz.getSuperclass());
             }
-            MethodInfo info = new MethodInfo();
-            String annoName = "";
-            if (field.isAnnotationPresent(JsonField.class)){
-                annoName = field.getDeclaredAnnotation(JsonField.class).name();
-            }
-           String  filedName =  field.getName();
-           info.setField(field);
-           info.setFieldName(filedName);
-           info.setAnnoName(annoName);
-           infos.add(info);
-        }
-        if (clazz.getSuperclass() != null && clazz.getSuperclass() != Object.class){
-           getAllFields(infos,clazz.getSuperclass());
-        }
-    }
-
-    private static void getMethod(List<MethodInfo> infos , Class clazz){
-        try {
-            for(MethodInfo info : infos) {
+            Field[] fields = clazz.getDeclaredFields();
+            for(Field field:fields){
+                if (Modifier.isStatic(field.getModifiers())){
+                    continue;
+                }
+                MethodInfo info = new MethodInfo();
+                String annoName = "";
+                if (field.isAnnotationPresent(JsonField.class)){
+                    annoName = field.getDeclaredAnnotation(JsonField.class).name();
+                }
+                String  filedName =  field.getName();
+                info.setField(field);
+                info.setFieldName(filedName);
+                info.setAnnoName(annoName);
                 String getMethodName = getMethodName(info.getFieldName());
                 Method getMethod = clazz.getMethod(getMethodName,null);
                 String setMethodName = setMethodName(info.getFieldName());
@@ -44,8 +38,10 @@ public class JsonDemon {
                 info.setSetMethodName(setMethodName);
                 info.setGetMethod(getMethod);
                 info.setGetMethodName(getMethodName);
+                infos.add(info);
             }
-        } catch (NoSuchMethodException e) {
+
+        }catch (NoSuchMethodException e) {
             e.printStackTrace();
         }
     }
@@ -86,7 +82,6 @@ public class JsonDemon {
         Class clazz = o.getClass();
         List<MethodInfo> infos = new ArrayList<>(8);
         getAllFields(infos,clazz);
-        getMethod(infos,clazz);
         String json = getJson(infos,clazz,o);
         return json;
     }
@@ -96,7 +91,6 @@ public class JsonDemon {
     public static <T> T getClass(String json ,Class<T> clazz){
         List<MethodInfo> infos = new ArrayList<>(8);
         getAllFields(infos,clazz);
-        getMethod(infos,clazz);
         T t = getClass(json,infos,clazz);
         return t;
     }
@@ -121,7 +115,7 @@ public class JsonDemon {
                     ShortJson.setClass(info.getSetMethod(),t,json,fieldName);
                 } else if (type.toString().equals("byte")|| type.toString().equals("class java.lang.Byte")){
                     ByteJson.setClass(info.getSetMethod(),t,json,fieldName);
-                }else{
+                }else if (type.toString().equals("class java.lang.String")){
                     StringJson.setClass(info.getSetMethod(),t,json,fieldName);
                 }
             }
